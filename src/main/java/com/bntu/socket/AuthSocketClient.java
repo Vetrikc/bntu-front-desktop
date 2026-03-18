@@ -1,32 +1,38 @@
 package com.bntu.socket;
 
-
 import com.bntu.dto.AuthRequest;
 import com.bntu.dto.AuthResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
+@Component
+@RequiredArgsConstructor
 public class AuthSocketClient {
 
-    private static final String HOST = "localhost";
-    private static final int PORT = 9090;
+    @Value("${auth.server.host}")
+    private String host;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    @Value("${auth.server.port}")
+    private int port;
+
+    private final ObjectMapper mapper;
 
     private AuthResponse send(AuthRequest request) throws IOException {
         try (
-            Socket socket = new Socket(HOST, PORT);
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(
-                    socket.getOutputStream(), StandardCharsets.UTF_8), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    socket.getInputStream(), StandardCharsets.UTF_8))
+                Socket socket = new Socket(host, port);
+                PrintWriter out = new PrintWriter(new OutputStreamWriter(
+                        socket.getOutputStream(), StandardCharsets.UTF_8), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(
+                        socket.getInputStream(), StandardCharsets.UTF_8))
         ) {
             out.println(mapper.writeValueAsString(request));
-            String response = in.readLine();
-            return mapper.readValue(response, AuthResponse.class);
+            return mapper.readValue(in.readLine(), AuthResponse.class);
         }
     }
 

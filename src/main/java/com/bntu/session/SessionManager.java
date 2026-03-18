@@ -1,20 +1,16 @@
 package com.bntu.session;
 
-public class SessionManager {
+import lombok.Getter;
+import org.springframework.stereotype.Component;
 
-    private static SessionManager instance;
+@Component
+@Getter
+public class SessionManager {
 
     private String accessToken;
     private String refreshToken;
     private String username;
     private String role;
-
-    private SessionManager() {}
-
-    public static SessionManager getInstance() {
-        if (instance == null) instance = new SessionManager();
-        return instance;
-    }
 
     public void save(String accessToken, String refreshToken,
                      String username, String role) {
@@ -31,10 +27,7 @@ public class SessionManager {
         this.role         = null;
     }
 
-    public boolean isLoggedIn() { return accessToken != null; }
-
-    public String getAccessToken()  { return accessToken; }
-    public String getRefreshToken() { return refreshToken; }
-    public String getUsername()     { return username; }
-    public String getRole()         { return role; }
+    public boolean isLoggedIn() {
+        return accessToken != null;
+    }
 }

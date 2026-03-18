@@ -1,6 +1,7 @@
 plugins {
     id 'java'
-    id 'application'
+    id 'org.springframework.boot' version '3.2.4'
+    id 'io.spring.dependency-management' version '1.1.4'
 }
 
 group = 'com.bntu'
@@ -11,33 +12,25 @@ java {
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-application {
-    mainClass = 'com.bntu.client.ClientApplication'
-}
-
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    // Jackson
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.17.0'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+    // Spring Boot (без веб-сервера)
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+
+    // Jackson (уже входит в spring-boot-starter)
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
 
     // Lombok
-    compileOnly 'org.projectlombok:lombok:1.18.32'
-    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 }
 
-jar {
-    manifest {
-        attributes 'Main-Class': 'com.bntu.client.ClientApplication'
-    }
-    from {
-        configurations.runtimeClasspath.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }
-    }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+// Fat jar
+bootJar {
+    mainClass = 'com.bntu.client.ClientApplication'
 }

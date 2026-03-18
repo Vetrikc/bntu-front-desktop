@@ -1,41 +1,48 @@
 package com.bntu.ui;
 
 
-
 import com.bntu.dto.ProfileResponse;
 import com.bntu.session.SessionManager;
 import com.bntu.socket.AuthSocketClient;
 import com.bntu.socket.UserSocketClient;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.stereotype.Component;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+@Component
+@RequiredArgsConstructor
 public class ProfilePanel extends JPanel {
 
-    private final MainFrame frame;
-    private final UserSocketClient userClient = new UserSocketClient();
-    private final AuthSocketClient authClient = new AuthSocketClient();
+    private final UserSocketClient userClient;
+    private final AuthSocketClient authClient;
+    private final SessionManager session;
+    @Setter
+    private MainFrame frame;
 
     private final JTextField firstNameField = new JTextField();
-    private final JTextField lastNameField  = new JTextField();
-    private final JTextField emailField     = new JTextField();
-    private final JTextField phoneField     = new JTextField();
+    private final JTextField lastNameField = new JTextField();
+    private final JTextField emailField = new JTextField();
+    private final JTextField phoneField = new JTextField();
     private final JTextField birthDateField = new JTextField();
-    private final JTextArea  bioField       = new JTextArea(3, 0);
-    private final JLabel     statusLabel    = new JLabel(" ");
-    private final JLabel     userInfoLabel  = new JLabel(" ");
+    private final JTextArea bioField = new JTextArea(3, 0);
+    private final JLabel statusLabel = new JLabel(" ");
+    private final JLabel userInfoLabel = new JLabel(" ");
 
     private boolean profileExists = false;
 
-    public ProfilePanel(MainFrame frame) {
-        this.frame = frame;
+    @PostConstruct
+    public void init() {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(20, 40, 20, 40));
         setBackground(Color.WHITE);
 
         add(buildHeader(), BorderLayout.NORTH);
-        add(buildForm(),   BorderLayout.CENTER);
+        add(buildForm(), BorderLayout.CENTER);
         add(buildFooter(), BorderLayout.SOUTH);
     }
 
@@ -51,7 +58,7 @@ public class ProfilePanel extends JPanel {
         userInfoLabel.setForeground(Color.GRAY);
         userInfoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        header.add(title,         BorderLayout.CENTER);
+        header.add(title, BorderLayout.CENTER);
         header.add(userInfoLabel, BorderLayout.SOUTH);
         return header;
     }
@@ -114,12 +121,11 @@ public class ProfilePanel extends JPanel {
     }
 
     public void loadProfile() {
-        SessionManager session = SessionManager.getInstance();
         userInfoLabel.setText("@" + session.getUsername() + "  |  " + session.getRole());
-        statusLabel.setText("Загрузка профиля...");
+        statusLabel.setText("Загрузка...");
         statusLabel.setForeground(Color.GRAY);
 
-        SwingWorker<ProfileResponse, Void> worker = new SwingWorker<>() {
+        new SwingWorker<ProfileResponse, Void>() {
             @Override
             protected ProfileResponse doInBackground() throws Exception {
                 return userClient.getProfile(session.getAccessToken());
@@ -144,32 +150,27 @@ public class ProfilePanel extends JPanel {
                     statusLabel.setForeground(Color.RED);
                 }
             }
-        };
-        worker.execute();
+        }.execute();
     }
 
     private void doSave() {
-        String token     = SessionManager.getInstance().getAccessToken();
+        String token = session.getAccessToken();
         String firstName = firstNameField.getText().trim();
-        String lastName  = lastNameField.getText().trim();
-        String email     = emailField.getText().trim();
-        String phone     = phoneField.getText().trim();
+        String lastName = lastNameField.getText().trim();
+        String email = emailField.getText().trim();
+        String phone = phoneField.getText().trim();
         String birthDate = birthDateField.getText().trim();
-        String bio       = bioField.getText().trim();
+        String bio = bioField.getText().trim();
 
         statusLabel.setText("Сохранение...");
         statusLabel.setForeground(Color.GRAY);
 
-        SwingWorker<ProfileResponse, Void> worker = new SwingWorker<>() {
+        new SwingWorker<ProfileResponse, Void>() {
             @Override
             protected ProfileResponse doInBackground() throws Exception {
-                if (profileExists) {
-                    return userClient.updateProfile(token, firstName, lastName,
-                            email, phone, birthDate, bio);
-                } else {
-                    return userClient.createProfile(token, firstName, lastName,
-                            email, phone, birthDate, bio);
-                }
+                return profileExists
+                        ? userClient.updateProfile(token, firstName, lastName, email, phone, birthDate, bio)
+                        : userClient.createProfile(token, firstName, lastName, email, phone, birthDate, bio);
             }
 
             @Override
@@ -190,37 +191,33 @@ public class ProfilePanel extends JPanel {
                     statusLabel.setForeground(Color.RED);
                 }
             }
-        };
-        worker.execute();
+        }.execute();
     }
 
     private void doLogout() {
-        String refreshToken = SessionManager.getInstance().getRefreshToken();
-
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+        new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
-                authClient.logout(refreshToken);
+                authClient.logout(session.getRefreshToken());
                 return null;
             }
 
             @Override
             protected void done() {
-                SessionManager.getInstance().clear();
+                session.clear();
                 clearFields();
                 frame.showPanel(MainFrame.LOGIN);
             }
-        };
-        worker.execute();
+        }.execute();
     }
 
     private void fillFields(ProfileResponse p) {
         firstNameField.setText(p.getFirstName() != null ? p.getFirstName() : "");
-        lastNameField.setText(p.getLastName()   != null ? p.getLastName()  : "");
-        emailField.setText(p.getEmail()         != null ? p.getEmail()     : "");
-        phoneField.setText(p.getPhone()         != null ? p.getPhone()     : "");
+        lastNameField.setText(p.getLastName() != null ? p.getLastName() : "");
+        emailField.setText(p.getEmail() != null ? p.getEmail() : "");
+        phoneField.setText(p.getPhone() != null ? p.getPhone() : "");
         birthDateField.setText(p.getBirthDate() != null ? p.getBirthDate() : "");
-        bioField.setText(p.getBio()             != null ? p.getBio()       : "");
+        bioField.setText(p.getBio() != null ? p.getBio() : "");
     }
 
     private void clearFields() {

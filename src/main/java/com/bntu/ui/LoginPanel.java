@@ -1,26 +1,31 @@
 package com.bntu.ui;
 
-
-
 import com.bntu.dto.AuthResponse;
 import com.bntu.session.SessionManager;
 import com.bntu.socket.AuthSocketClient;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+@Component
+@RequiredArgsConstructor
 public class LoginPanel extends JPanel {
 
-    private final MainFrame frame;
-    private final AuthSocketClient authClient = new AuthSocketClient();
+    private final AuthSocketClient authClient;
+    private final SessionManager   session;
+    private MainFrame frame;
 
-    private final JTextField usernameField = new JTextField();
+    private final JTextField    usernameField = new JTextField();
     private final JPasswordField passwordField = new JPasswordField();
-    private final JLabel errorLabel = new JLabel(" ");
+    private final JLabel         errorLabel    = new JLabel(" ");
 
-    public LoginPanel(MainFrame frame) {
-        this.frame = frame;
+    @PostConstruct
+    public void init() {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(40, 50, 40, 50));
         setBackground(Color.WHITE);
@@ -28,6 +33,10 @@ public class LoginPanel extends JPanel {
         add(buildTitle(),  BorderLayout.NORTH);
         add(buildForm(),   BorderLayout.CENTER);
         add(buildBottom(), BorderLayout.SOUTH);
+    }
+
+    public void setFrame(MainFrame frame) {
+        this.frame = frame;
     }
 
     private JLabel buildTitle() {
@@ -42,7 +51,6 @@ public class LoginPanel extends JPanel {
         form.setBackground(Color.WHITE);
 
         form.add(label("Логин"));
-        usernameField.setPreferredSize(new Dimension(0, 36));
         usernameField.setFont(new Font("Arial", Font.PLAIN, 14));
         form.add(usernameField);
 
@@ -59,10 +67,8 @@ public class LoginPanel extends JPanel {
         JButton loginBtn = new JButton("Войти");
         styleButton(loginBtn, new Color(52, 120, 246));
         loginBtn.addActionListener(e -> doLogin());
-        form.add(loginBtn);
-
-        // Enter по нажатию
         passwordField.addActionListener(e -> doLogin());
+        form.add(loginBtn);
 
         return form;
     }
@@ -99,7 +105,7 @@ public class LoginPanel extends JPanel {
 
         errorLabel.setText("Подключение...");
 
-        SwingWorker<AuthResponse, Void> worker = new SwingWorker<>() {
+        new SwingWorker<AuthResponse, Void>() {
             @Override
             protected AuthResponse doInBackground() throws Exception {
                 return authClient.login(username, password);
@@ -110,9 +116,8 @@ public class LoginPanel extends JPanel {
                 try {
                     AuthResponse resp = get();
                     if (resp.isSuccess()) {
-                        SessionManager.getInstance().save(
-                            resp.getAccessToken(), resp.getRefreshToken(),
-                            resp.getUsername(), resp.getRole());
+                        session.save(resp.getAccessToken(), resp.getRefreshToken(),
+                                resp.getUsername(), resp.getRole());
                         passwordField.setText("");
                         errorLabel.setText(" ");
                         frame.showPanel(MainFrame.PROFILE);
@@ -123,8 +128,7 @@ public class LoginPanel extends JPanel {
                     errorLabel.setText("Ошибка подключения к серверу");
                 }
             }
-        };
-        worker.execute();
+        }.execute();
     }
 
     private JLabel label(String text) {

@@ -1,26 +1,32 @@
 package com.bntu.ui;
 
+
 import com.bntu.dto.AuthResponse;
 import com.bntu.socket.AuthSocketClient;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+@Component
+@RequiredArgsConstructor
 public class RegisterPanel extends JPanel {
 
-    private final MainFrame frame;
-    private final AuthSocketClient authClient = new AuthSocketClient();
+    private final AuthSocketClient authClient;
+    private MainFrame frame;
 
-    private final JTextField usernameField = new JTextField();
+    private final JTextField     usernameField = new JTextField();
     private final JPasswordField passwordField = new JPasswordField();
-    private final JPasswordField confirmField = new JPasswordField();
-    private final JComboBox<String> roleBox = new JComboBox<>(new String[]{"USER", "ADMIN"});
-    private final JLabel errorLabel = new JLabel(" ");
-    private final JLabel successLabel = new JLabel(" ");
+    private final JPasswordField confirmField  = new JPasswordField();
+    private final JComboBox<String> roleBox    = new JComboBox<>(new String[]{"USER", "ADMIN"});
+    private final JLabel errorLabel            = new JLabel(" ");
+    private final JLabel successLabel          = new JLabel(" ");
 
-    public RegisterPanel(MainFrame frame) {
-        this.frame = frame;
+    @PostConstruct
+    public void init() {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(40, 50, 40, 50));
         setBackground(Color.WHITE);
@@ -28,6 +34,10 @@ public class RegisterPanel extends JPanel {
         add(buildTitle(),  BorderLayout.NORTH);
         add(buildForm(),   BorderLayout.CENTER);
         add(buildBottom(), BorderLayout.SOUTH);
+    }
+
+    public void setFrame(MainFrame frame) {
+        this.frame = frame;
     }
 
     private JLabel buildTitle() {
@@ -118,7 +128,7 @@ public class RegisterPanel extends JPanel {
 
         errorLabel.setText("Регистрация...");
 
-        SwingWorker<AuthResponse, Void> worker = new SwingWorker<>() {
+        new SwingWorker<AuthResponse, Void>() {
             @Override
             protected AuthResponse doInBackground() throws Exception {
                 return authClient.register(username, password, role);
@@ -144,8 +154,7 @@ public class RegisterPanel extends JPanel {
                     errorLabel.setText("Ошибка подключения к серверу");
                 }
             }
-        };
-        worker.execute();
+        }.execute();
     }
 
     private JLabel label(String text) {

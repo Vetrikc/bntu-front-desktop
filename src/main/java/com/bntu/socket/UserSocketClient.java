@@ -3,29 +3,36 @@ package com.bntu.socket;
 import com.bntu.dto.ProfileRequest;
 import com.bntu.dto.ProfileResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
+@Component
+@RequiredArgsConstructor
 public class UserSocketClient {
 
-    private static final String HOST = "localhost";
-    private static final int PORT = 9091;
+    @Value("${user.server.host}")
+    private String host;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    @Value("${user.server.port}")
+    private int port;
+
+    private final ObjectMapper mapper;
 
     private ProfileResponse send(ProfileRequest request) throws IOException {
         try (
-            Socket socket = new Socket(HOST, PORT);
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(
-                    socket.getOutputStream(), StandardCharsets.UTF_8), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    socket.getInputStream(), StandardCharsets.UTF_8))
+                Socket socket = new Socket(host, port);
+                PrintWriter out = new PrintWriter(new OutputStreamWriter(
+                        socket.getOutputStream(), StandardCharsets.UTF_8), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(
+                        socket.getInputStream(), StandardCharsets.UTF_8))
         ) {
             out.println(mapper.writeValueAsString(request));
-            String response = in.readLine();
-            return mapper.readValue(response, ProfileResponse.class);
+            return mapper.readValue(in.readLine(), ProfileResponse.class);
         }
     }
 
@@ -37,8 +44,8 @@ public class UserSocketClient {
     }
 
     public ProfileResponse createProfile(String token, String firstName, String lastName,
-                                          String email, String phone,
-                                          String birthDate, String bio) throws IOException {
+                                         String email, String phone,
+                                         String birthDate, String bio) throws IOException {
         ProfileRequest req = new ProfileRequest();
         req.setAction("CREATE_PROFILE");
         req.setToken(token);
@@ -52,8 +59,8 @@ public class UserSocketClient {
     }
 
     public ProfileResponse updateProfile(String token, String firstName, String lastName,
-                                          String email, String phone,
-                                          String birthDate, String bio) throws IOException {
+                                         String email, String phone,
+                                         String birthDate, String bio) throws IOException {
         ProfileRequest req = new ProfileRequest();
         req.setAction("UPDATE_PROFILE");
         req.setToken(token);

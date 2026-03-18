@@ -1,0 +1,9 @@
+auth:
+  server:
+    host: localhost
+    port: 9090
+
+user:
+  server:
+    host: localhost
+    port: 9091
